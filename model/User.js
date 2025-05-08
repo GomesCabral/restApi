@@ -1,0 +1,53 @@
+const mongoose = require('mongoose');
+const validator = require('validator');
+const bcrypt = require('bcryptjs');
+
+
+const userSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        minlength: 3,
+        maxlength: 20,
+        trim: true,
+        required: true
+    },
+    age: {
+        type: Number,
+        validate(value){
+            if(value < 18){
+                throw new Error('Age cant be less than 18');
+            }
+        }
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true,
+        lowercase: true,
+        trim: true,
+        validate(value){
+            if(!validator.isEmail(value)){
+                throw new Error('Email is not valid');
+            }
+        }
+    },
+    password: {
+        type: String,
+        required: true
+    }
+});
+
+
+userSchema.pre('save', async function(next){
+    const user = this;
+
+    if(user.isModified('password')){
+        user.password = await bcrypt.hash(user.password, 8);
+    }
+
+    next();
+});
+
+const User = mongoose.model('User', userSchema);
+
+module.exports = User;
